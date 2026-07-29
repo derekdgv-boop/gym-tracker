@@ -17,9 +17,9 @@
   header p{margin:0;color:var(--muted);font-size:0.85rem;}
   main{padding:14px 16px 20px;max-width:720px;margin:0 auto;}
   .tabs{position:fixed;bottom:0;left:0;right:0;display:flex;background:var(--card);border-top:1px solid var(--border);z-index:10;}
-  .tab{flex:1;text-align:center;padding:10px 4px 8px;color:var(--muted);font-size:0.72rem;background:none;border:none;cursor:pointer;}
+  .tab{flex:1;text-align:center;padding:8px 2px 7px;color:var(--muted);font-size:0.62rem;background:none;border:none;cursor:pointer;}
   .tab.active{color:var(--accent);}
-  .tab .ic{display:block;font-size:1.25rem;margin-bottom:2px;}
+  .tab .ic{display:block;font-size:1.1rem;margin-bottom:2px;}
   .view{display:none;}
   .view.active{display:block;}
   .card{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:14px;margin-bottom:12px;}
@@ -57,6 +57,28 @@
   .stat .lbl{font-size:0.7rem;color:var(--muted);}
   select#exSelect{margin-bottom:10px;}
   .del-x{float:right;color:var(--bad);cursor:pointer;font-size:0.8rem;}
+
+  .cal-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;}
+  .cal-head button{background:var(--card2);border:1px solid var(--border);color:var(--text);border-radius:8px;padding:6px 12px;cursor:pointer;font-size:1rem;}
+  .cal-head span{font-weight:600;font-size:0.95rem;}
+  .cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:4px;text-align:center;}
+  .cal-dow{color:var(--muted);font-size:0.65rem;padding-bottom:4px;}
+  .cal-day{position:relative;aspect-ratio:1;border-radius:8px;background:var(--card2);display:flex;flex-direction:column;align-items:center;justify-content:center;font-size:0.75rem;cursor:pointer;border:1px solid transparent;}
+  .cal-day.empty2{background:none;cursor:default;}
+  .cal-day.today{border-color:var(--accent);}
+  .cal-day.selected{background:var(--accent);color:#0b1210;}
+  .cal-dots{display:flex;gap:2px;margin-top:2px;height:5px;}
+  .cal-dot{width:5px;height:5px;border-radius:50%;}
+  .dot-w{background:var(--accent);}
+  .dot-b{background:var(--accent2);}
+  .dot-c{background:#60a5fa;}
+  .cal-day.selected .dot-w,.cal-day.selected .dot-b,.cal-day.selected .dot-c{background:#0b1210;}
+
+  .goal-card{background:var(--card2);border-radius:10px;padding:10px;margin-bottom:10px;}
+  .goal-card .gh{display:flex;justify-content:space-between;align-items:center;font-size:0.85rem;margin-bottom:6px;}
+  .progress-bar{height:8px;background:var(--border);border-radius:6px;overflow:hidden;}
+  .progress-fill{height:100%;background:var(--accent);}
+  .goal-meta{display:flex;justify-content:space-between;font-size:0.7rem;color:var(--muted);margin-top:4px;}
 </style>
 </head>
 <body>
@@ -117,6 +139,22 @@
     </div>
   </section>
 
+  <!-- CALENDARIO -->
+  <section id="view-calendario" class="view">
+    <div class="card">
+      <div class="cal-head">
+        <button onclick="changeMonth(-1)">‹</button>
+        <span id="calLabel"></span>
+        <button onclick="changeMonth(1)">›</button>
+      </div>
+      <div class="cal-grid" id="calGrid"></div>
+    </div>
+    <div class="card">
+      <h2 id="calDayTitle">📅 Selecciona un día</h2>
+      <div id="calDayDetail"><div class="empty">Toca un día del calendario.</div></div>
+    </div>
+  </section>
+
   <!-- CUERPO -->
   <section id="view-cuerpo" class="view">
     <div class="card">
@@ -150,6 +188,36 @@
     </div>
   </section>
 
+  <!-- METAS -->
+  <section id="view-metas" class="view">
+    <div class="card">
+      <h2>🎯 Nueva meta</h2>
+      <label>Tipo de meta</label>
+      <select id="goalType" onchange="onGoalTypeChange()">
+        <option value="exercise">Peso en un ejercicio</option>
+        <option value="bodyweight">Peso corporal</option>
+        <option value="cardio">Minutos de cardio por semana</option>
+      </select>
+      <div id="goalExerciseWrap">
+        <label>Ejercicio</label>
+        <input list="exList" id="goalExercise" placeholder="Ej: Press banca">
+      </div>
+      <label id="goalTargetLabel">Peso objetivo (kg)</label>
+      <input type="number" step="0.1" id="goalTarget" placeholder="Ej: 100">
+      <div id="goalDeadlineWrap">
+        <label>Fecha límite (opcional)</label>
+        <input type="date" id="goalDeadline">
+      </div>
+      <label>Nota (opcional)</label>
+      <input id="goalNote" placeholder="Por qué esta meta...">
+      <button class="btn" onclick="guardarMeta()">Guardar meta</button>
+    </div>
+    <div class="card">
+      <h2>📌 Mis metas</h2>
+      <div id="goalList"><div class="empty">Sin metas todavía.</div></div>
+    </div>
+  </section>
+
   <!-- RECOMENDACIONES -->
   <section id="view-rec" class="view">
     <div class="card">
@@ -167,7 +235,9 @@
 <nav class="tabs">
   <button class="tab active" data-view="hoy" onclick="switchView('hoy')"><span class="ic">🏋️</span>Hoy</button>
   <button class="tab" data-view="progreso" onclick="switchView('progreso')"><span class="ic">📈</span>Progreso</button>
+  <button class="tab" data-view="calendario" onclick="switchView('calendario')"><span class="ic">📅</span>Calendario</button>
   <button class="tab" data-view="cuerpo" onclick="switchView('cuerpo')"><span class="ic">⚖️</span>Cuerpo</button>
+  <button class="tab" data-view="metas" onclick="switchView('metas')"><span class="ic">🎯</span>Metas</button>
   <button class="tab" data-view="rec" onclick="switchView('rec')"><span class="ic">🧠</span>Recomendaciones</button>
 </nav>
 
@@ -176,11 +246,13 @@
 const STORE_KEY = 'gymtracker_data_v1';
 function loadData(){
   const raw = localStorage.getItem(STORE_KEY);
-  if(raw) return JSON.parse(raw);
-  return { workouts: [], body: [], cardio: [] };
+  const d = raw ? JSON.parse(raw) : { workouts: [], body: [], cardio: [] };
+  if(!d.goals) d.goals = [];
+  return d;
   // workouts: {id, date, exercise, group, sets:[{weight,reps}], notes}
   // body: {id, date, weight, waist, chest, arm, leg}
   // cardio: {id, date, type, min, km}
+  // goals: {id, type:'exercise'|'bodyweight'|'cardio', exercise, target, startValue, deadline, note, createdDate}
 }
 let DATA = loadData();
 function save(){ localStorage.setItem(STORE_KEY, JSON.stringify(DATA)); }
@@ -197,7 +269,9 @@ function switchView(name){
   document.getElementById('view-'+name).classList.add('active');
   document.querySelector(`.tab[data-view="${name}"]`).classList.add('active');
   if(name==='progreso') renderProgreso();
+  if(name==='calendario') renderCalendario();
   if(name==='cuerpo') renderCuerpo();
+  if(name==='metas') renderMetas();
   if(name==='rec') renderRecomendaciones();
 }
 
@@ -492,6 +566,152 @@ function renderRecomendaciones(){
   `;
 }
 
+/* ---------- Calendario ---------- */
+let calDate = new Date(); calDate.setDate(1);
+let calSelected = null;
+
+function changeMonth(delta){
+  calDate.setMonth(calDate.getMonth()+delta);
+  renderCalendario();
+}
+
+function renderCalendario(){
+  const year = calDate.getFullYear(), month = calDate.getMonth();
+  let label = calDate.toLocaleDateString('es-MX',{month:'long',year:'numeric'});
+  label = label.charAt(0).toUpperCase()+label.slice(1);
+  document.getElementById('calLabel').textContent = label;
+
+  const firstDow = new Date(year,month,1).getDay();
+  const daysInMonth = new Date(year,month+1,0).getDate();
+  const dowNames = ['D','L','M','M','J','V','S'];
+  let html = dowNames.map(d=>`<div class="cal-dow">${d}</div>`).join('');
+  for(let i=0;i<firstDow;i++) html += `<div class="cal-day empty2"></div>`;
+
+  const today = todayStr();
+  for(let d=1; d<=daysInMonth; d++){
+    const dateStr = `${year}-${String(month+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+    const hasW = DATA.workouts.some(w=>w.date===dateStr);
+    const hasB = DATA.body.some(b=>b.date===dateStr);
+    const hasC = DATA.cardio.some(c=>c.date===dateStr);
+    const cls = ['cal-day'];
+    if(dateStr===today) cls.push('today');
+    if(dateStr===calSelected) cls.push('selected');
+    const dots = (hasW?'<span class="cal-dot dot-w"></span>':'') + (hasB?'<span class="cal-dot dot-b"></span>':'') + (hasC?'<span class="cal-dot dot-c"></span>':'');
+    html += `<div class="${cls.join(' ')}" onclick="selectCalDay('${dateStr}')">${d}<div class="cal-dots">${dots}</div></div>`;
+  }
+  document.getElementById('calGrid').innerHTML = html;
+}
+
+function selectCalDay(dateStr){
+  calSelected = dateStr;
+  renderCalendario();
+  const w = DATA.workouts.filter(x=>x.date===dateStr);
+  const b = DATA.body.filter(x=>x.date===dateStr);
+  const c = DATA.cardio.filter(x=>x.date===dateStr);
+  document.getElementById('calDayTitle').textContent = `📅 ${fmtDate(dateStr)}`;
+  let html = '';
+  html += w.map(x=>`<div class="hist-item"><b>${x.exercise}</b><div>${x.sets.map(s=>`${s.weight}kg×${s.reps}`).join(' · ')}</div></div>`).join('');
+  html += b.map(x=>`<div class="hist-item">⚖️ Peso: ${x.weight}kg</div>`).join('');
+  html += c.map(x=>`<div class="hist-item">🏃 ${x.type}: ${x.min}min${x.km?(' · '+x.km+'km'):''}</div>`).join('');
+  document.getElementById('calDayDetail').innerHTML = html || '<div class="empty">Sin registros este día.</div>';
+}
+
+/* ---------- Metas ---------- */
+function onGoalTypeChange(){
+  const type = document.getElementById('goalType').value;
+  document.getElementById('goalExerciseWrap').style.display = type==='exercise' ? 'block' : 'none';
+  document.getElementById('goalDeadlineWrap').style.display = type==='cardio' ? 'none' : 'block';
+  document.getElementById('goalTargetLabel').textContent = type==='cardio' ? 'Minutos objetivo por semana' : 'Peso objetivo (kg)';
+}
+
+function guardarMeta(){
+  const type = document.getElementById('goalType').value;
+  const target = parseFloat(document.getElementById('goalTarget').value);
+  if(isNaN(target)){ alert('Ingresa un valor objetivo.'); return; }
+  const note = document.getElementById('goalNote').value.trim();
+  const deadline = document.getElementById('goalDeadline').value || null;
+  let exercise = null, startValue = null;
+
+  if(type==='exercise'){
+    exercise = document.getElementById('goalExercise').value.trim();
+    if(!exercise){ alert('Escribe el ejercicio.'); return; }
+    const sessions = getExerciseSessions(exercise);
+    startValue = sessions.length ? sessionMaxWeight(sessions[sessions.length-1]) : 0;
+  } else if(type==='bodyweight'){
+    const sorted = [...DATA.body].sort((a,b)=>b.date.localeCompare(a.date));
+    startValue = sorted.length ? sorted[0].weight : target;
+  }
+
+  DATA.goals.push({ id: Date.now(), type, exercise, target, startValue, deadline, note, createdDate: todayStr() });
+  save();
+  document.getElementById('goalTarget').value='';
+  document.getElementById('goalExercise').value='';
+  document.getElementById('goalNote').value='';
+  document.getElementById('goalDeadline').value='';
+  renderMetas();
+}
+
+function borrarMeta(id){
+  if(!confirm('¿Borrar esta meta?')) return;
+  DATA.goals = DATA.goals.filter(g=>g.id!==id);
+  save();
+  renderMetas();
+}
+
+function goalCurrentValue(g){
+  if(g.type==='exercise'){
+    const sessions = getExerciseSessions(g.exercise);
+    return sessions.length ? sessionMaxWeight(sessions[sessions.length-1]) : 0;
+  }
+  if(g.type==='bodyweight'){
+    const sorted = [...DATA.body].sort((a,b)=>b.date.localeCompare(a.date));
+    return sorted.length ? sorted[0].weight : (g.startValue||0);
+  }
+  if(g.type==='cardio'){
+    const weekCutoff = new Date(); weekCutoff.setDate(weekCutoff.getDate()-7);
+    return DATA.cardio.filter(c=> new Date(c.date) >= weekCutoff).reduce((s,c)=>s+c.min,0);
+  }
+  return 0;
+}
+
+function goalProgressPct(g, current){
+  if(g.type==='cardio') return Math.max(0, Math.min(100, (current/g.target)*100));
+  const start = g.startValue ?? 0;
+  if(g.target === start) return 100;
+  if(g.target > start) return Math.max(0, Math.min(100, ((current-start)/(g.target-start))*100));
+  return Math.max(0, Math.min(100, ((start-current)/(start-g.target))*100));
+}
+
+function renderMetas(){
+  const el = document.getElementById('goalList');
+  if(!DATA.goals.length){ el.innerHTML = '<div class="empty">Sin metas todavía.</div>'; return; }
+  el.innerHTML = DATA.goals.map(g=>{
+    const current = goalCurrentValue(g);
+    const pct = goalProgressPct(g, current);
+    const unit = g.type==='cardio' ? 'min/sem' : 'kg';
+    const label = g.type==='exercise' ? g.exercise : (g.type==='bodyweight' ? 'Peso corporal' : 'Cardio semanal');
+    let deadlineTxt = '';
+    if(g.deadline){
+      const days = daysBetween(todayStr(), g.deadline);
+      deadlineTxt = days >= 0 ? `${days} días restantes` : `Venció hace ${-days} días`;
+    }
+    return `
+      <div class="goal-card">
+        <div class="gh">
+          <span><b>${label}</b></span>
+          <span class="del-x" onclick="borrarMeta(${g.id})">✕</span>
+        </div>
+        <div class="progress-bar"><div class="progress-fill" style="width:${pct.toFixed(0)}%"></div></div>
+        <div class="goal-meta">
+          <span>${current}${unit} / ${g.target}${unit} (${pct.toFixed(0)}%)</span>
+          <span>${deadlineTxt}</span>
+        </div>
+        ${g.note ? `<div style="color:var(--muted);font-size:0.75rem;margin-top:4px">"${g.note}"</div>` : ''}
+      </div>
+    `;
+  }).join('');
+}
+
 /* ---------- Init ---------- */
 function updateHeader(){
   const total = DATA.workouts.length;
@@ -504,6 +724,7 @@ resetSetsForm();
 renderToday();
 renderExerciseList();
 updateHeader();
+onGoalTypeChange();
 </script>
 
 </body>
