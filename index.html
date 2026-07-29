@@ -62,6 +62,7 @@
   .pick-chip{display:flex;align-items:center;gap:5px;background:var(--card2);border:1px solid var(--border);border-radius:20px;padding:6px 12px;font-size:0.8rem;cursor:pointer;color:var(--text);}
   .pick-chip .pi{font-size:1rem;}
   .pick-chip.on{background:var(--accent);color:#0b1210;border-color:var(--accent);}
+  .pick-chip.top{border-color:var(--warn);}
   .lib-hint{color:var(--muted);font-size:0.78rem;margin-top:6px;}
 
   .balance-wrap{display:flex;gap:14px;align-items:flex-start;flex-wrap:wrap;}
@@ -591,13 +592,61 @@ const MUSCLE_GROUPS = [
   {key:'otro', label:'Otro', icon:'➕'}
 ];
 const EXERCISE_LIBRARY = {
-  pecho: [{name:'Press banca',icon:'🏋️'},{name:'Press inclinado',icon:'📐'},{name:'Aperturas con mancuerna',icon:'🦅'},{name:'Fondos en paralelas',icon:'🤸'},{name:'Press con mancuernas',icon:'🏋️'}],
-  espalda: [{name:'Dominadas',icon:'🧗'},{name:'Remo con barra',icon:'🚣'},{name:'Jalón al pecho',icon:'⬇️'},{name:'Remo en polea',icon:'🎣'},{name:'Peso muerto',icon:'🏋️'}],
-  pierna: [{name:'Sentadilla',icon:'🦵'},{name:'Prensa',icon:'🦿'},{name:'Zancadas',icon:'🚶'},{name:'Peso muerto rumano',icon:'🏋️'},{name:'Extensión de cuádriceps',icon:'🦵'}],
-  hombro: [{name:'Press militar',icon:'🎯'},{name:'Elevaciones laterales',icon:'🦅'},{name:'Elevaciones frontales',icon:'⬆️'},{name:'Face pull',icon:'🧵'}],
-  brazo: [{name:'Curl de bíceps',icon:'💪'},{name:'Press francés',icon:'🔻'},{name:'Curl martillo',icon:'🔨'},{name:'Extensión de tríceps en polea',icon:'🔽'}],
-  core: [{name:'Plancha',icon:'🧘'},{name:'Crunch abdominal',icon:'🌀'},{name:'Elevación de piernas',icon:'🦵'},{name:'Russian twist',icon:'🔁'}],
-  cardio: [{name:'Correr',icon:'🏃'},{name:'Bicicleta',icon:'🚴'},{name:'Remo (máquina)',icon:'🚣'},{name:'Escaladora',icon:'🧗'},{name:'Saltar cuerda',icon:'🪢'}],
+  pecho: [
+    {name:'Press banca', icon:'🏋️', top:true, why:'Compuesto, mayor activación total de pecho'},
+    {name:'Press inclinado', icon:'📐', top:true, why:'Prioriza pecho superior, zona que suele quedar débil'},
+    {name:'Fondos en paralelas', icon:'🤸', top:true, why:'Alta activación de pecho inferior y tríceps'},
+    {name:'Press en máquina', icon:'🧰', why:'Máquina, buena para volumen sin exigir estabilizadores'},
+    {name:'Peck deck (contractora)', icon:'🦋', why:'Aislamiento con tensión constante en todo el rango'},
+    {name:'Aperturas en polea', icon:'🦅', why:'Tensión constante, mejor que mancuerna según estudios recientes'}
+  ],
+  espalda: [
+    {name:'Dominadas', icon:'🧗', top:true, why:'Referencia para dorsales, muy alta activación'},
+    {name:'Peso muerto', icon:'🏋️', top:true, why:'Mayor activación de toda la cadena posterior'},
+    {name:'Remo con barra', icon:'🚣', top:true, why:'Compuesto, gran volumen de espalda media'},
+    {name:'Jalón al pecho (máquina)', icon:'⬇️', why:'Máquina más común, buen sustituto de dominadas'},
+    {name:'Remo en máquina/polea sentado', icon:'🎣', why:'Aísla espalda media con buen control'},
+    {name:'Remo en máquina Hammer', icon:'🔧', why:'Máquina, permite buena sobrecarga progresiva'}
+  ],
+  pierna: [
+    {name:'Sentadilla', icon:'🦵', top:true, why:'Compuesto, referencia para cuádriceps y glúteo'},
+    {name:'Peso muerto rumano', icon:'🏋️', top:true, why:'Mejor evidencia para isquiotibiales y glúteo'},
+    {name:'Prensa de piernas (máquina)', icon:'🦿', top:true, why:'Máquina más común, alta carga con menor riesgo'},
+    {name:'Curl femoral (máquina)', icon:'🦵', top:true, why:'Aísla isquiotibiales, grupo que muchas rutinas olvidan'},
+    {name:'Extensión de cuádriceps (máquina)', icon:'🦿', why:'Aislamiento de cuádriceps'},
+    {name:'Zancadas', icon:'🚶', why:'Unilateral, útil para equilibrio entre piernas'},
+    {name:'Elevación de talones (máquina)', icon:'🦶', why:'Pantorrilla, grupo comúnmente descuidado'}
+  ],
+  hombro: [
+    {name:'Press militar', icon:'🎯', top:true, why:'Compuesto, el más efectivo para masa total de hombro'},
+    {name:'Elevaciones laterales', icon:'🦅', top:true, why:'Clave para deltoide lateral, responde bien a más volumen'},
+    {name:'Face pull (polea)', icon:'🧵', top:true, why:'Deltoide posterior, mejora salud del hombro'},
+    {name:'Press en máquina de hombro', icon:'🧰', why:'Máquina, alternativa segura al press libre'},
+    {name:'Elevaciones frontales', icon:'⬆️', why:'Menor prioridad, el deltoide anterior ya trabaja en el press'}
+  ],
+  brazo: [
+    {name:'Curl en polea', icon:'🪝', top:true, why:'Tensión constante, mejor estímulo que mancuerna libre'},
+    {name:'Press francés', icon:'🔻', top:true, why:'Mejor para la cabeza larga del tríceps (más masa)'},
+    {name:'Curl de bíceps con barra', icon:'💪', why:'Clásico, permite más carga'},
+    {name:'Extensión de tríceps en polea', icon:'🔽', why:'Aislamiento común, fácil de progresar'},
+    {name:'Curl martillo', icon:'🔨', why:'Braquial y antebrazo'},
+    {name:'Fondos en máquina de tríceps', icon:'🧰', why:'Máquina común para tríceps'}
+  ],
+  core: [
+    {name:'Elevación de piernas colgado', icon:'🦵', top:true, why:'Mayor activación de abdomen inferior'},
+    {name:'Rueda abdominal', icon:'🎡', top:true, why:'Muy alta activación de recto abdominal (EMG)'},
+    {name:'Crunch en máquina', icon:'🧰', why:'Máquina, permite sobrecarga progresiva'},
+    {name:'Plancha', icon:'🧘', why:'Buena para estabilidad, menor efecto en hipertrofia'},
+    {name:'Russian twist', icon:'🔁', why:'Oblicuos'}
+  ],
+  cardio: [
+    {name:'Correr', icon:'🏃'},
+    {name:'Bicicleta (máquina)', icon:'🚴'},
+    {name:'Remo (máquina)', icon:'🚣'},
+    {name:'Escaladora (máquina)', icon:'🧗'},
+    {name:'Elíptica (máquina)', icon:'🌀'},
+    {name:'Saltar cuerda', icon:'🪢'}
+  ],
   otro: []
 };
 let selectedGroup = 'pecho';
@@ -624,8 +673,9 @@ function renderLibraryChips(){
   }
   wrap.innerHTML = `
     <label>Elige un ejercicio</label>
+    <div class="lib-hint">⭐ = respaldo científico más fuerte (compuestos / mayor activación muscular)</div>
     <div class="chip-row" id="libraryChips">
-      ${list.map(ex=>`<div class="pick-chip ${ex.name===selectedLibExercise?'on':''}" onclick="selectLibExercise('${ex.name.replace(/'/g,"\\'")}')"><span class="pi">${ex.icon}</span>${ex.name}</div>`).join('')}
+      ${list.map(ex=>`<div class="pick-chip ${ex.top?'top':''} ${ex.name===selectedLibExercise?'on':''}" title="${(ex.why||'').replace(/"/g,'&quot;')}" onclick="selectLibExercise('${ex.name.replace(/'/g,"\\'")}')"><span class="pi">${ex.icon}</span>${ex.top?'⭐ ':''}${ex.name}</div>`).join('')}
     </div>
   `;
 }
