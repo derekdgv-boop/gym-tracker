@@ -58,6 +58,20 @@
   select#exSelect{margin-bottom:10px;}
   .del-x{float:right;color:var(--bad);cursor:pointer;font-size:0.8rem;}
 
+  .chip-row{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px;}
+  .pick-chip{display:flex;align-items:center;gap:5px;background:var(--card2);border:1px solid var(--border);border-radius:20px;padding:6px 12px;font-size:0.8rem;cursor:pointer;color:var(--text);}
+  .pick-chip .pi{font-size:1rem;}
+  .pick-chip.on{background:var(--accent);color:#0b1210;border-color:var(--accent);}
+  .lib-hint{color:var(--muted);font-size:0.78rem;margin-top:6px;}
+
+  .balance-wrap{display:flex;gap:14px;align-items:flex-start;flex-wrap:wrap;}
+  .balance-svg{flex:0 0 140px;}
+  .balance-legend{flex:1;min-width:160px;}
+  .bl-row{display:flex;align-items:center;justify-content:space-between;font-size:0.8rem;padding:5px 0;border-bottom:1px solid var(--border);}
+  .bl-row:last-child{border-bottom:none;}
+  .bl-dot{width:10px;height:10px;border-radius:50%;display:inline-block;margin-right:6px;}
+  .balance-verdict{margin-top:12px;padding:9px 12px;border-radius:10px;font-size:0.85rem;font-weight:600;text-align:center;}
+
   .cal-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;}
   .cal-head button{background:var(--card2);border:1px solid var(--border);color:var(--text);border-radius:8px;padding:6px 12px;cursor:pointer;font-size:1rem;}
   .cal-head span{font-weight:600;font-size:0.95rem;}
@@ -94,20 +108,18 @@
   <section id="view-hoy" class="view active">
     <div class="card">
       <h2>🏋️ Registrar entrenamiento</h2>
-      <label>Ejercicio</label>
+      <label>Grupo muscular</label>
+      <div class="chip-row" id="groupChips"></div>
+      <input type="hidden" id="exGroup" value="pecho">
+
+      <div id="libraryWrap">
+        <label>Elige un ejercicio</label>
+        <div class="chip-row" id="libraryChips"></div>
+      </div>
+
+      <label>O escribe otro ejercicio</label>
       <input list="exList" id="exInput" placeholder="Ej: Press banca, Sentadilla...">
       <datalist id="exList"></datalist>
-      <label>Grupo muscular</label>
-      <select id="exGroup">
-        <option value="pecho">Pecho</option>
-        <option value="espalda">Espalda</option>
-        <option value="pierna">Pierna</option>
-        <option value="hombro">Hombro</option>
-        <option value="brazo">Brazo</option>
-        <option value="core">Core</option>
-        <option value="cardio">Cardio</option>
-        <option value="otro">Otro</option>
-      </select>
 
       <label>Series</label>
       <div id="setsWrap"></div>
@@ -221,6 +233,14 @@
   <!-- RECOMENDACIONES -->
   <section id="view-rec" class="view">
     <div class="card">
+      <h2>🗺️ Mapa de balance muscular</h2>
+      <div class="balance-wrap">
+        <div class="balance-svg" id="balanceSvg"></div>
+        <div class="balance-legend" id="balanceLegend"></div>
+      </div>
+      <div class="balance-verdict" id="balanceVerdict"></div>
+    </div>
+    <div class="card">
       <h2>🧠 Recomendaciones</h2>
       <div id="recList"><div class="empty">Registra algunos entrenamientos para recibir recomendaciones.</div></div>
     </div>
@@ -318,6 +338,8 @@ function guardarEjercicio(){
   save();
   document.getElementById('exInput').value='';
   document.getElementById('exNotes').value='';
+  selectedLibExercise = null;
+  renderLibraryChips();
   resetSetsForm();
   renderToday();
   renderExerciseList();
@@ -534,16 +556,7 @@ function renderRecomendaciones(){
     recs.push({level:'warn', title:'Muchos días seguidos entrenando', text:`Llevas ${recentStreak} días seguidos. Considera un día de descanso para recuperación muscular.`});
   }
 
-  // 4. balance de grupos musculares (últimos 14 días)
-  const cutoff = new Date(); cutoff.setDate(cutoff.getDate()-14);
-  const recent = DATA.workouts.filter(w=> new Date(w.date) >= cutoff);
-  const byGroup = {};
-  recent.forEach(w=> byGroup[w.group] = (byGroup[w.group]||0)+1);
-  const groups = ['pecho','espalda','pierna','hombro'];
-  const missing = groups.filter(g=> !byGroup[g]);
-  if(recent.length>3 && missing.length>0){
-    recs.push({level:'warn', title:'Grupo muscular descuidado', text:`No entrenaste ${missing.join(', ')} en los últimos 14 días. Balancea tu rutina.`});
-  }
+  renderBalanceMap();
 
   const el = document.getElementById('recList');
   el.innerHTML = recs.length ? recs.map(r=>`
@@ -564,6 +577,125 @@ function renderRecomendaciones(){
     <div class="stat"><div class="num">${weekCardio}</div><div class="lbl">Min. cardio</div></div>
     <div class="stat"><div class="num">${new Set(weekWorkouts.map(w=>w.exercise)).size}</div><div class="lbl">Ejercicios distintos</div></div>
   `;
+}
+
+/* ---------- Selector de ejercicios ---------- */
+const MUSCLE_GROUPS = [
+  {key:'pecho', label:'Pecho', icon:'🫁'},
+  {key:'espalda', label:'Espalda', icon:'🔙'},
+  {key:'pierna', label:'Pierna', icon:'🦵'},
+  {key:'hombro', label:'Hombro', icon:'🤷'},
+  {key:'brazo', label:'Brazo', icon:'💪'},
+  {key:'core', label:'Core', icon:'🧘'},
+  {key:'cardio', label:'Cardio', icon:'🏃'},
+  {key:'otro', label:'Otro', icon:'➕'}
+];
+const EXERCISE_LIBRARY = {
+  pecho: [{name:'Press banca',icon:'🏋️'},{name:'Press inclinado',icon:'📐'},{name:'Aperturas con mancuerna',icon:'🦅'},{name:'Fondos en paralelas',icon:'🤸'},{name:'Press con mancuernas',icon:'🏋️'}],
+  espalda: [{name:'Dominadas',icon:'🧗'},{name:'Remo con barra',icon:'🚣'},{name:'Jalón al pecho',icon:'⬇️'},{name:'Remo en polea',icon:'🎣'},{name:'Peso muerto',icon:'🏋️'}],
+  pierna: [{name:'Sentadilla',icon:'🦵'},{name:'Prensa',icon:'🦿'},{name:'Zancadas',icon:'🚶'},{name:'Peso muerto rumano',icon:'🏋️'},{name:'Extensión de cuádriceps',icon:'🦵'}],
+  hombro: [{name:'Press militar',icon:'🎯'},{name:'Elevaciones laterales',icon:'🦅'},{name:'Elevaciones frontales',icon:'⬆️'},{name:'Face pull',icon:'🧵'}],
+  brazo: [{name:'Curl de bíceps',icon:'💪'},{name:'Press francés',icon:'🔻'},{name:'Curl martillo',icon:'🔨'},{name:'Extensión de tríceps en polea',icon:'🔽'}],
+  core: [{name:'Plancha',icon:'🧘'},{name:'Crunch abdominal',icon:'🌀'},{name:'Elevación de piernas',icon:'🦵'},{name:'Russian twist',icon:'🔁'}],
+  cardio: [{name:'Correr',icon:'🏃'},{name:'Bicicleta',icon:'🚴'},{name:'Remo (máquina)',icon:'🚣'},{name:'Escaladora',icon:'🧗'},{name:'Saltar cuerda',icon:'🪢'}],
+  otro: []
+};
+let selectedGroup = 'pecho';
+let selectedLibExercise = null;
+
+function renderGroupChips(){
+  document.getElementById('groupChips').innerHTML = MUSCLE_GROUPS.map(g=>`
+    <div class="pick-chip ${g.key===selectedGroup?'on':''}" onclick="selectGroup('${g.key}')"><span class="pi">${g.icon}</span>${g.label}</div>
+  `).join('');
+}
+function selectGroup(key){
+  selectedGroup = key;
+  selectedLibExercise = null;
+  document.getElementById('exGroup').value = key;
+  renderGroupChips();
+  renderLibraryChips();
+}
+function renderLibraryChips(){
+  const list = EXERCISE_LIBRARY[selectedGroup] || [];
+  const wrap = document.getElementById('libraryWrap');
+  if(list.length===0){
+    wrap.innerHTML = '<div class="lib-hint">Sin ejercicios predefinidos para este grupo. Escribe el nombre abajo.</div>';
+    return;
+  }
+  wrap.innerHTML = `
+    <label>Elige un ejercicio</label>
+    <div class="chip-row" id="libraryChips">
+      ${list.map(ex=>`<div class="pick-chip ${ex.name===selectedLibExercise?'on':''}" onclick="selectLibExercise('${ex.name.replace(/'/g,"\\'")}')"><span class="pi">${ex.icon}</span>${ex.name}</div>`).join('')}
+    </div>
+  `;
+}
+function selectLibExercise(name){
+  selectedLibExercise = name;
+  document.getElementById('exInput').value = name;
+  renderLibraryChips();
+}
+
+/* ---------- Mapa de balance muscular ---------- */
+function balanceColor(count){
+  if(count===0) return getComputedStyle(document.documentElement).getPropertyValue('--bad').trim();
+  if(count===1) return getComputedStyle(document.documentElement).getPropertyValue('--warn').trim();
+  return getComputedStyle(document.documentElement).getPropertyValue('--good').trim();
+}
+function renderBalanceMap(){
+  const cutoff = new Date(); cutoff.setDate(cutoff.getDate()-14);
+  const recent = DATA.workouts.filter(w=> new Date(w.date) >= cutoff);
+  const groups = ['pecho','espalda','pierna','hombro','brazo','core'];
+  const counts = {};
+  groups.forEach(g=> counts[g] = new Set(recent.filter(w=>w.group===g).map(w=>w.date)).size);
+
+  const zones = [
+    {key:'hombro', cx:70, cy:46},
+    {key:'pecho', cx:70, cy:65},
+    {key:'core', cx:70, cy:100},
+    {key:'brazo', cx:111, cy:78},
+    {key:'espalda', cx:29, cy:78},
+    {key:'pierna', cx:57, cy:160}
+  ];
+
+  const dots = zones.map(z=>{
+    const c = balanceColor(counts[z.key]);
+    const dashed = z.key==='espalda' ? 'stroke-dasharray="3,2"' : '';
+    return `<circle cx="${z.cx}" cy="${z.cy}" r="11" fill="${c}" stroke="#0f1115" stroke-width="2" ${dashed}><title>${z.key}: ${counts[z.key]} sesiones (14 días)</title></circle>`;
+  }).join('');
+
+  const svg = `
+  <svg viewBox="0 0 140 220" width="100%" xmlns="http://www.w3.org/2000/svg">
+    <circle cx="70" cy="22" r="16" fill="#2a2f3a"/>
+    <rect x="46" y="40" width="48" height="80" rx="12" fill="#2a2f3a"/>
+    <rect x="22" y="44" width="18" height="68" rx="9" fill="#2a2f3a"/>
+    <rect x="100" y="44" width="18" height="68" rx="9" fill="#2a2f3a"/>
+    <rect x="48" y="124" width="18" height="80" rx="9" fill="#2a2f3a"/>
+    <rect x="74" y="124" width="18" height="80" rx="9" fill="#2a2f3a"/>
+    ${dots}
+  </svg>`;
+  document.getElementById('balanceSvg').innerHTML = svg;
+
+  const groupInfo = {pecho:'🫁 Pecho', espalda:'🔙 Espalda', pierna:'🦵 Pierna', hombro:'🤷 Hombro', brazo:'💪 Brazo', core:'🧘 Core'};
+  document.getElementById('balanceLegend').innerHTML = groups.map(g=>`
+    <div class="bl-row"><span><span class="bl-dot" style="background:${balanceColor(counts[g])}"></span>${groupInfo[g]}</span><span>${counts[g]} sesiones</span></div>
+  `).join('');
+
+  const missing = groups.filter(g=> counts[g]===0);
+  const low = groups.filter(g=> counts[g]===1);
+  const verdictEl = document.getElementById('balanceVerdict');
+  if(recent.length===0){
+    verdictEl.textContent = 'Registra entrenamientos para ver tu balance.';
+    verdictEl.style.background = 'var(--card2)'; verdictEl.style.color='var(--muted)';
+  } else if(missing.length===0 && low.length===0){
+    verdictEl.textContent = '✅ Rutina equilibrada, todos los grupos trabajados';
+    verdictEl.style.background = 'rgba(52,211,153,.15)'; verdictEl.style.color='var(--good)';
+  } else if(missing.length>0){
+    verdictEl.textContent = `⚠️ Desbalanceado: falta ${missing.map(g=>groupInfo[g]).join(', ')}`;
+    verdictEl.style.background = 'rgba(248,113,113,.15)'; verdictEl.style.color='var(--bad)';
+  } else {
+    verdictEl.textContent = `🟡 Casi equilibrado: refuerza ${low.map(g=>groupInfo[g]).join(', ')}`;
+    verdictEl.style.background = 'rgba(251,191,36,.15)'; verdictEl.style.color='var(--warn)';
+  }
 }
 
 /* ---------- Calendario ---------- */
@@ -725,6 +857,8 @@ renderToday();
 renderExerciseList();
 updateHeader();
 onGoalTypeChange();
+renderGroupChips();
+renderLibraryChips();
 </script>
 
 </body>
